@@ -3,7 +3,14 @@ from datetime import datetime
 from train import main
 import os
 import shutil
- 
+
+
+"""
+C : Convolutional Layer syntax : ('C', out_channels, kernel_size, padding, )
+M : MaxPooling Layer
+fc : Fully Connected Layer
+
+"""
 archs = {
     'LeNet5': [('C', 6, 5, 'not_same', 3),
                 ('M',2,2),
@@ -11,7 +18,7 @@ archs = {
                 ('M',2,2),
                 ('fc' , 400 , 120 , ),
                  ('fc' , 120 , 84),
-                ('fc3' , 84 , 10)] ,
+                ('fc' , 84 , 10)] ,
 
     'VGG8': [('C', 128, 3, 'same', 3),
                 ('M',2,2),
@@ -21,18 +28,15 @@ archs = {
                 ('M',2,2),
                 ('fc' , 8192 , 1024),
                 ('fc' , 1024 , 10)],
-    # 'VGG11': [('C', 128, 3, 'same', 3),
-    #             ('M',2,2),
-    #             ('C', 128, 3, 'same', 1.0),
-    #             ('M',2,2),
-    #             ('C', 256, 3, 'same', 1.0),
-    #             ('M',2,2),
-    #             ('fc' , 1024 , 256),
-    #              ('fc' , 256 , 128),
-    #             ('fc3' , 128 , 10)]
+    
 }
 
 if __name__ == '__main__':
+    """
+    This script is used for training a PyTorch model on the CIFAR-X dataset.
+    It takes various command-line arguments to configure the training process.
+    """
+
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch CIFAR-X Example')
     parser.add_argument('--type', default='cifar10', help='dataset for training')
@@ -67,7 +71,7 @@ if __name__ == '__main__':
     parser,current_time
 
 
-    for (key, value) in archs.items():
+    for (key, value) in reversed(archs.items()):
         folder_name = f'Results/{key}/NeuroSIM'
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)

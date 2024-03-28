@@ -27,7 +27,6 @@ def make_layers(cfg, args, logger ):
             non_linearity_activation =  nn.ReLU()
         else:
             non_linearity_activation = nn.Tanh()
-
         if v[0] == 'M':
             layersC += [nn.MaxPool2d(kernel_size=v[1], stride=v[2])]
         elif v[0] == 'C':
