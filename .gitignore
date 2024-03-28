@@ -1,0 +1,4 @@
+Results
+log
+*.o
+__pycache__
