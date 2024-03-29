@@ -228,7 +228,6 @@ def main(parser , current_time , arch):
     model = Create_Model(args ,logger ,  arch)
     if args.cuda:
         model.cuda()
-
     optimizer = optim.SGD(model.parameters(), lr=1)
 
     decreasing_lr = list(map(int, args.decreasing_lr.split(',')))

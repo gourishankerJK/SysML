@@ -23,10 +23,7 @@ def make_layers(cfg, args, logger ):
     in_channels = cfg[0][-1]
 
     for i, v in enumerate(cfg):
-        if(len(v) == 4):
-            non_linearity_activation =  nn.ReLU()
-        else:
-            non_linearity_activation = nn.Tanh()
+        non_linearity_activation =  nn.ReLU()
         if v[0] == 'M':
             layersC += [nn.MaxPool2d(kernel_size=v[1], stride=v[2])]
         elif v[0] == 'C':

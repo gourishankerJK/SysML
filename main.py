@@ -3,7 +3,7 @@ from datetime import datetime
 from train import main
 import os
 import shutil
-
+from subprocess import call
 
 """
 C : Convolutional Layer syntax : ('C', out_channels, kernel_size, padding, )
@@ -12,11 +12,11 @@ fc : Fully Connected Layer
 
 """
 archs = {
-    'LeNet5': [('C', 6, 5, 'not_same', 3),
+    'LeNet5': [('C', 6, 5, 'same', 3),
                 ('M',2,2),
-                ('C', 16, 5, 'not_same'),
+                ('C', 16, 5, 'same'),
                 ('M',2,2),
-                ('fc' , 400 , 120 , ),
+                ('fc' , 1024 , 120 , ),
                  ('fc' , 120 , 84),
                 ('fc' , 84 , 10)] ,
 
@@ -30,6 +30,49 @@ archs = {
                 ('fc' , 1024 , 10)],
     
 }
+
+import subprocess
+
+def invoke_make(value):
+    os.chdir('NeuroSIM')
+    try:
+        
+        subprocess.run(['make'], check=True)
+        print("Make command executed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing make command: {e}")
+    os.chdir("../")
+
+
+
+def make_network_file(arch):
+    input_width = 32
+    input_height = 32
+    input_channel = 3
+    network_file = []
+    for layer in arch:
+        if layer[0] == 'C':
+            filters = layer[1]
+            kernel_size = layer[2]
+            network_file.append([input_height, input_width, input_channel, kernel_size, kernel_size, filters, 1, 1])
+            padding =  layer[2]//2 if layer[3] == 'same' else 0
+            input_width = (input_width - kernel_size + 2*padding) + 1
+            input_height = (input_height - kernel_size + 2*padding)  + 1
+            input_channel = filters
+        elif layer[0] == 'M':
+            kernel_size = layer[1]
+            stride = layer[2]
+            input_width = (input_width - kernel_size )//stride + 1
+            input_height = (input_height - kernel_size ) // stride  + 1
+        elif layer[0] == 'fc':
+            network_file.append([1, 1, layer[1], 1, 1, layer[2], 0, 1])
+    file = []
+    for net in network_file:
+        file.append(','.join(map(str, net)))
+    return file
+    
+    
+make_network_file(archs['VGG8'])    
 
 if __name__ == '__main__':
     """
@@ -71,7 +114,7 @@ if __name__ == '__main__':
     parser,current_time
 
 
-    for (key, value) in reversed(archs.items()):
+    for (key, value) in archs.items():
         folder_name = f'Results/{key}/NeuroSIM'
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
@@ -82,8 +125,16 @@ if __name__ == '__main__':
         files=os.listdir(src)
         for fname in files:
             shutil.copy2(os.path.join(src,fname), trg)
+        # if os.path.exists(f'Results/{key}/NeuroSIM/NetWork.csv'):
+        #     shutil.rmtree(f'Results/{key}/NeuroSIM/NetWork.csv') 
+      
+        with open(f'Results/{key}/NeuroSIM/NetWork.csv', 'w') as f:
+            for item in make_network_file(value):
+                f.write("%s\n" % item) 
         folder2 = f'Results/{key}/'
         os.chdir(folder2)
+        # Call the function to invoke make
+      #  invoke_make(key)
 
         print("#---#"*50 , key) 
         main(parser,current_time, value)
