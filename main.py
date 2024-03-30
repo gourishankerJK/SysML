@@ -4,7 +4,8 @@ from train import main
 import os
 import shutil
 from subprocess import call
-
+import pickle
+import json
 """
 C : Convolutional Layer syntax : ('C', out_channels, kernel_size, padding, )
 M : MaxPooling Layer
@@ -116,6 +117,36 @@ def invoke_make(value):
     os.chdir("../")
 
 
+
+def parse_layers_from_arch(layers ):
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+
+    embedding_size = config["embedding_size"]
+    layer2vec = [0] * embedding_size
+    index = 0
+    print(layers)
+    for layer in layers : 
+        if layer[0] == 'C' : 
+             layer2vec[index] = layer[1]
+             layer2vec[index+1] = layer[2]
+             layer2vec[index+2] = config[layer[3]] * (layer[2]) // 2
+             layer2vec[index+3] = config["end"]
+             index += 4
+        elif layer[0] == 'M' : 
+             layer2vec[index] = layer[1]
+             layer2vec[index+1] = layer[2]
+             layer2vec[index+2] = config["end"]
+             index += 3
+        elif layer[0] == 'fc' : 
+            layer2vec[index] = layer[1]
+            layer2vec[index+1] = layer[2]
+            layer2vec[index+2] = config["end"]
+            index += 3
+        else : 
+            raise ValueError("Invalid layer type")
+    return layer2vec
+    
 
 def make_network_file(arch):
     input_width = 32
@@ -241,13 +272,16 @@ if __name__ == '__main__':
             for item in make_network_file(value)[0]:
                 f.write("%s\n" % item) 
         folder2 = f'Results/{key}/'
+        
+        with open(f'Results/{key}/arch.pkl', 'wb') as f:
+           pickle.dump(parse_layers_from_arch(value), f)
         os.chdir(folder2)
         # Call the function to invoke make
         invoke_make(key)
 
         print("=="*5 )
         print(key) 
-        main(parser,current_time, value)
+       # main(parser,current_time, value)
         print(key)
         print("\n\n"*5)
         os.chdir('../../')
