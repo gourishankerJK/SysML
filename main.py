@@ -123,8 +123,9 @@ def make_network_file(arch):
     input_channel = 3
     network_file = []
     flag = 0
-    for layer in arch:
+    for i , layer in enumerate(arch):
         if layer[0] == 'C':
+            
             filters = layer[1]
             kernel_size = layer[2]
             network_file.append([input_height, input_width, input_channel, kernel_size, kernel_size, filters, flag , 1])
@@ -143,7 +144,7 @@ def make_network_file(arch):
     file = []
     for net in network_file:
         file.append(','.join(map(str, net)))
-    return file  
+    return file  , network_file 
 
 if __name__ == '__main__':
     """
@@ -184,30 +185,61 @@ if __name__ == '__main__':
     current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     parser,current_time
 
-
     for (key, value) in archs.items():
         folder_name = f'Results/{key}/NeuroSIM'
         if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        else :
+            shutil.rmtree(folder_name)
             os.makedirs(folder_name)
 
         src = 'NeuroSIM'
         trg = folder_name
         
         files=os.listdir(src)
+        
+        # 	int numMemInRow = (netStructure[maxIFMLayer][0]-netStructure[maxIFMLayer][3]+1)*(netStructure[maxIFMLayer][1]-netStructure[maxIFMLayer][4]+1);
+		# int numMemInCol = netStructure[maxIFMLayer][2]*param->numBitInput;
+  
+#   numRowSubArrayWG = 128; // # of rows of single SRAM subArray in "gradient calculation of weight"
+# 	numColSubArrayWG = 128;
+        numMemInRow = 0
+        numMemInCol = 0
+        index  = 0
+        maxi = 0
+        netfile = make_network_file(value)[1]
+        for i , item in enumerate(netfile):
+            if(item[0] * item[1] * item[2] > maxi):
+                maxi = item[0] * item[1] * item[2]
+                index = i
+        numMemInRow = (netfile[index][0] - netfile[index][3] + 1) * (netfile[index][1] - netfile[index][4] + 1)
+        numMemInCol = netfile[index][2] * 8
+            
         for fname in files:
             shutil.copy2(os.path.join(src,fname), trg)
-
+            if(fname == 'Param.cpp'):
+                 with open(os.path.join(src, fname), 'r') as file:
+                    filedata = file.read()
+                    filedata = filedata.replace('numRowSubArray = 32;', 'numRowSubArray = 16;')
+                    filedata = filedata.replace('numColSubArray = 32;', 'numColSubArray = 32;')
+                    filedata = filedata.replace('numRowSubArrayWG = 128;', f'numRowSubArrayWG = {min(numMemInRow , 128)};')
+                    filedata = filedata.replace('numColSubArrayWG = 128;', f'numColSubArrayWG = {min(128 , numMemInCol)};')
+                    with open(os.path.join(trg, fname), 'w') as file:
+                        file.write(filedata)      
+                
         with open(f'Results/{key}/NeuroSIM/NetWork.csv', 'w') as f:
-            for item in make_network_file(value):
+            for item in make_network_file(value)[0]:
                 f.write("%s\n" % item) 
         folder2 = f'Results/{key}/'
         os.chdir(folder2)
         # Call the function to invoke make
         invoke_make(key)
 
-        print("#---#"*50 , key) 
+        print("=="*5 )
+        print(key) 
         main(parser,current_time, value)
-        print("+++||++"*25 , key)
+        print(key)
+        print("\n\n"*5)
         os.chdir('../../')
 
  
