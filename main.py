@@ -214,14 +214,24 @@ if __name__ == '__main__':
                 index = i
         numMemInRow = (netfile[index][0] - netfile[index][3] + 1) * (netfile[index][1] - netfile[index][4] + 1)
         numMemInCol = netfile[index][2] * 8
+        
+        if(key == 'LeNet5_padding'):
+            numRowSubArray = 32 
+            numColSubArray = 32
+        elif (key == 'LeNet5_without_padding'):
+            numRowSubArray = 64 
+            numColSubArray = 64 
+        else :
+             numRowSubArray = 16
+             numColSubArray = 32 
             
         for fname in files:
             shutil.copy2(os.path.join(src,fname), trg)
             if(fname == 'Param.cpp'):
                  with open(os.path.join(src, fname), 'r') as file:
                     filedata = file.read()
-                    filedata = filedata.replace('numRowSubArray = 32;', 'numRowSubArray = 16;')
-                    filedata = filedata.replace('numColSubArray = 32;', 'numColSubArray = 32;')
+                    filedata = filedata.replace('numRowSubArray = 32;', f'numRowSubArray = {numRowSubArray};')
+                    filedata = filedata.replace('numColSubArray = 32;', f'numColSubArray = {numColSubArray};')
                     filedata = filedata.replace('numRowSubArrayWG = 128;', f'numRowSubArrayWG = {min(numMemInRow , 128)};')
                     filedata = filedata.replace('numColSubArrayWG = 128;', f'numColSubArrayWG = {min(128 , numMemInCol)};')
                     with open(os.path.join(trg, fname), 'w') as file:
