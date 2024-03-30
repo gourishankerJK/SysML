@@ -143,10 +143,7 @@ def make_network_file(arch):
     file = []
     for net in network_file:
         file.append(','.join(map(str, net)))
-    return file
-    
-    
-make_network_file(archs['VGG8'])    
+    return file  
 
 if __name__ == '__main__':
     """
