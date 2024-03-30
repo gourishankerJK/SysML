@@ -41,15 +41,19 @@ def make_layers(cfg, args, logger ):
                              subArray=args.subArray,ADCprecision=args.ADCprecision,vari=args.vari,t=args.t,v=args.v,detect=args.detect,target=args.target,
                              name = 'Conv'+str(i)+'_' )
           
-            layersC += [conv2d, non_linearity_activation]
+            layersC += [conv2d]
             in_channels = out_channels
         elif(v[0] == 'fc'):
             linear = QLinear(in_features=v[1], out_features=v[2],logger=logger,
                              wl_input = args.wl_activate,wl_activate=args.wl_activate,wl_error=args.wl_error,
                              wl_weight=args.wl_weight,inference=args.inference,onoffratio=args.onoffratio,cellBit=args.cellBit,
                              subArray=args.subArray,ADCprecision=args.ADCprecision,vari=args.vari,t=args.t,v=args.v,detect=args.detect,target=args.target,
-                             name='FC'+str(i)+'_')            
-            layersF += [linear, non_linearity_activation]
+                             name='FC'+str(i)+'_')
+            if i < len(cfg)-1:
+                    non_linearity_activation =  nn.ReLU()
+                    layersF += [linear, non_linearity_activation]
+            else:
+                    layersF += [linear]            
     return nn.Sequential(*layersC) , nn.Sequential(*layersF)
 
 

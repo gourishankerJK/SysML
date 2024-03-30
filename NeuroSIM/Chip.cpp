@@ -211,6 +211,7 @@ vector<vector<double> > ChipFloorPlan(bool findNumTile, bool findUtilization, bo
 	*numTileCol = 0;
 
 	if (param->novelMapping) {		// Novel Mapping
+		cout << maxPESizeNM << " " << 2*param->numRowSubArray << endl;
 		if (maxPESizeNM < 2*param->numRowSubArray) {
 			cout << "ERROR: SubArray Size is too large, which break the chip hierarchey, please decrease the SubArray size! " << endl;
 		}else{

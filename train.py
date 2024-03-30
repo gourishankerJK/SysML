@@ -229,7 +229,7 @@ def main(parser , current_time , arch):
     if args.cuda:
         model.cuda()
     optimizer = optim.SGD(model.parameters(), lr=1)
-
+    print(model)
     decreasing_lr = list(map(int, args.decreasing_lr.split(',')))
     logger('decreasing_lr: ' + str(decreasing_lr))
     best_acc, old_file = 0, None

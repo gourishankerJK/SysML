@@ -127,8 +127,8 @@ Param::Param() {
 	treeFoldedRatio = 4;                // the H-Tree is assumed to be able to folding in layout (save area)
 	maxGlobalBusWidth = 8192;           // the max buswidth allowed on chip level (just a upper_bound, the actual bus width is defined according to the auto floorplan)
 
-	numRowSubArray = 128;               // # of rows in single subArray
-	numColSubArray = 128;               // # of columns in single subArray
+	numRowSubArray = 32;               // # of rows in single subArray
+	numColSubArray = 32;               // # of columns in single subArray
 	
 	/*** option to relax subArray layout ***/
 	relaxArrayCellHeight = 0;           // relax ArrayCellHeight or not

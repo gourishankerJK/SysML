@@ -12,11 +12,11 @@ fc : Fully Connected Layer
 
 """
 archs = {
-    'LeNet5': [('C', 6, 5, 'salme', 3),
+    'LeNet5_padding': [('C', 6, 5, 'same', 3),
                 ('M',2,2),
-                ('C', 16, 5, 'salme'),
+                ('C', 16, 5, 'same'),
                 ('M',2,2),
-                ('fc' , 400 , 120 , ),
+                ('fc' , 1024 , 120 , ),
                  ('fc' , 120 , 84),
                 ('fc' , 84 , 10)] ,
 
@@ -28,6 +28,78 @@ archs = {
                 ('M',2,2),
                 ('fc' , 8192 , 1024),
                 ('fc' , 1024 , 10)],
+    'LeNet5_without_padding': [('C', 6, 5, 'not_same', 3),
+                ('M',2,2),
+                ('C', 16, 5, 'not_same'),
+                ('M',2,2),
+                ('fc' , 400 , 120 , ),
+                 ('fc' , 120 , 84),
+                ('fc' , 84 , 10)] ,
+ 
+    'CNN8' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('C', 32, 3, 'same', 16),
+                ('M',2,2),
+                ('C', 64, 3, 'same', 32),
+                ('M',2,2),
+                ('fc' , 1024 , 256),
+                ('fc' , 256 , 10)],
+   
+    'CNN10' : [('C', 32, 3, 'same', 3),
+                ('M',2,2),
+                ('C', 64, 3, 'same', 32),
+                ('M',2,2),
+                ('C', 128, 3, 'same', 64),
+                ('M',2,2),
+                ('C', 256, 3, 'same', 128),
+                ('M',2,2),
+                ('fc' , 1024 , 512),
+                ('fc' , 512 , 10)],
+   
+    'CNN4' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('fc' , 4096 , 128),
+                ('fc' , 128 , 10)],
+ 
+    'CNN6' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('C', 32, 3, 'same', 16),
+                ('M',2,2),
+                ('fc' , 2048 , 128),
+                ('fc' , 128 , 10)],
+   
+    'CNN8_4' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('C', 32, 3, 'same', 16),
+                ('M',2,2),
+                ('C', 64, 3, 'same', 32),
+                ('M',2,2),
+                ('fc' , 1024 , 512),
+                ('fc' , 512 , 256),
+                ('fc' , 256 , 128),
+                ('fc' , 128 , 10)],
+   
+    'CNN6_6' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('C', 32, 3, 'same', 16),
+                ('M',2,2),
+                ('fc' , 2048 , 1024),
+                ('fc' , 1024 , 512),
+                ('fc' , 512 , 256),
+                ('fc' , 256 , 128),
+                ('fc' , 128 , 64),
+                ('fc' , 64 , 10)],
+   
+     'CNN4_8' : [('C', 16, 3, 'same', 3),
+                ('M',2,2),
+                ('fc' , 4096 , 2048),
+                ('fc' , 2048 , 1024),
+                ('fc' , 1024 , 512),
+                ('fc' , 512 , 256),
+                ('fc' , 256 , 128),
+                ('fc' , 128 , 64),
+                ('fc' , 64 , 32),
+                ('fc' , 32 , 10)],
     
 }
 
@@ -50,11 +122,12 @@ def make_network_file(arch):
     input_height = 32
     input_channel = 3
     network_file = []
+    flag = 0
     for layer in arch:
         if layer[0] == 'C':
             filters = layer[1]
             kernel_size = layer[2]
-            network_file.append([input_height, input_width, input_channel, kernel_size, kernel_size, filters, 1, 1])
+            network_file.append([input_height, input_width, input_channel, kernel_size, kernel_size, filters, flag , 1])
             padding =  layer[2]//2 if layer[3] == 'same' else 0
             input_width = (input_width - kernel_size + 2*padding) + 1
             input_height = (input_height - kernel_size + 2*padding)  + 1
@@ -66,6 +139,7 @@ def make_network_file(arch):
             input_height = (input_height - kernel_size ) // stride  + 1
         elif layer[0] == 'fc':
             network_file.append([1, 1, layer[1], 1, 1, layer[2], 0, 1])
+        flag = 1
     file = []
     for net in network_file:
         file.append(','.join(map(str, net)))
@@ -125,20 +199,18 @@ if __name__ == '__main__':
         files=os.listdir(src)
         for fname in files:
             shutil.copy2(os.path.join(src,fname), trg)
-        # if os.path.exists(f'Results/{key}/NeuroSIM/NetWork.csv'):
-        #     shutil.rmtree(f'Results/{key}/NeuroSIM/NetWork.csv') 
-      
+
         with open(f'Results/{key}/NeuroSIM/NetWork.csv', 'w') as f:
             for item in make_network_file(value):
                 f.write("%s\n" % item) 
         folder2 = f'Results/{key}/'
         os.chdir(folder2)
         # Call the function to invoke make
-      #  invoke_make(key)
+        invoke_make(key)
 
         print("#---#"*50 , key) 
         main(parser,current_time, value)
         print("+++||++"*25 , key)
-        os.chdir('../..')
+        os.chdir('../../')
 
  
