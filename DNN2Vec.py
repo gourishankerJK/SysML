@@ -1,94 +1,136 @@
-import torch
-import json
-
+import torch 
 import torch.nn as nn
 import torch.optim as optim
-# Read config.json file
-with open('config.json', 'r') as f:
-    config = json.load(f)
+import torch.nn.functional as F
+from torch.utils.data import DataLoader , TensorDataset
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+from io import StringIO
+import pickle
+import json
 
-# Extract necessary values from config
-layers = config["layers"]
-embedding_size = config["embedding_size"]
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+# open the file
+with open("config.json", "r") as file:
+    config = json.load(file)
+def get_data_loader():
+    with open ("./dataset.pkl" , "rb") as file:
+        data = pickle.load(file)
+    data = list(map(lambda x : (torch.tensor(x[0]) , torch.tensor(x[1])) , data))
+    # split the data into train and test
+    train_size = int(0.9 * len(data))
+    test_size = len(data) - train_size
+    train_data , test_data = torch.utils.data.random_split(data , [train_size , test_size])
+    train_data_loader = DataLoader(train_data , batch_size = 64 , shuffle = True)
+    test_data_loader = DataLoader(test_data , batch_size = 1 , shuffle = True)
+    return train_data_loader , test_data_loader
+# create a model
 
-
-
-def parse_layers_from_arch(arch):
-    arch = {
-    'LeNet5': [('C', 6, 5, 'not_same', 3),
-                ('M',2,2),
-                ('C', 16, 5, 'not_same'),
-                ('M',2,2),
-                ('fc' , 400 , 120 , ),
-                 ('fc' , 120 , 84),
-                ('fc' , 84 , 10)] ,
-    }
-    
-    layers = arch['LeNet5']
-    layer2vec = [0] * embedding_size
-    index = 0
-    for layer in layers : 
-        if layer[0] == 'C' : 
-             layer2vec[index] = layer[1]
-             layer2vec[index+1] = layer[2]
-             layer2vec[index+2] = config[layer[3]] * (layer[2]) // 2
-             layer2vec[index+3] = config["end"]
-             index += 4
-        elif layer[0] == 'M' : 
-             layer2vec[index] = layer[1]
-             layer2vec[index+1] = layer[2]
-             layer2vec[index+2] = config["end"]
-             index += 3
-        elif layer[0] == 'fc' : 
-            layer2vec[index] = layer[1]
-            layer2vec[index+1] = layer[2]
-            layer2vec[index+2] = config["end"]
-            index += 3
-        else : 
-            raise ValueError("Invalid layer type")
-    print(layer2vec)
-    
-
-
-parse_layers_from_arch(None)
-
-class NeuralNetwork(nn.Module):
-    def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        # Define your layers here
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
+class Model(nn.Module):
+    def __init__(self , input_size ,hidden_size, output_size):
+        super(Model , self).__init__()
+        self.fc1 = nn.Linear(input_size , hidden_size)
+        
+        self.fc2 = nn.Linear(hidden_size , hidden_size)
+        self.fc3 = nn.Linear(hidden_size , output_size)
+    def forward(self , x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
         return x
 
-# Define hyperparameters
-input_size = 784  # Input size of the network
-hidden_size = 128  # Number of neurons in the hidden layer
-output_size = 10  # Number of classes in the output layer
+def train():
+    epocs = []
+    losses = []
+    for epoch in range(10000):
+        model.train()
+        totalloss = 0
+        for i in train_data_loader:
+            X = torch.tensor(i[0]).float()
+            Y = torch.tensor(i[1]).squeeze(0).view(-1 ,20).float()
+            optimizer.zero_grad()
+            output = model(X)
+            loss = criterion(output , Y)
+            loss.backward()
+            optimizer.step()
+            totalloss += (loss.item()/ X.shape[0])
+        losses = losses + [totalloss / len(train_data_loader)]
+        epocs = epocs + [epoch]
 
-# Create an instance of the neural network
-model = NeuralNetwork()
+    # plot the loss
+    plt.plot(epocs , losses)
+    plt.show()
+    
+def test(test_data_loader , model , criterion , optimizer):
+    losses = []
+    epocs = []
+    model.eval()
+    count  = 0
+    ssm = 0
+    tss = 0
+    rms = 0
+    epoch = 1
+    totalloss = 0
+    with torch.no_grad():
+        for i in test_data_loader:
+            X = torch.tensor(i[0]).float()
+            Y = torch.tensor(i[1]).squeeze(0).view(-1 ,20).float()
+            output = model(X)
+            loss = criterion(output , Y)
+            # check the absolute difference is less than 0.01
+            if torch.all(torch.abs(output - Y) < 10):
+                count += 1
+                
+            # calculate the r^2 score
+            ssm += torch.sum((output - Y)**2)
+            tss += torch.sum((Y - torch.mean(Y))**2)
+            totalloss += (loss.item()/ X.shape[0])
+            # calcualte mean absolute percentage error
+            
+            losses = losses + [totalloss / len(test_data_loader)]
+            epocs = epocs + [count / epoch]
+            epoch += 1
+            
+            
+        print(count /(len(test_data_loader) )) 
+        print("RMSE: " , torch.sqrt(ssm/len(test_data_loader))  )
+        print("R^2: " , 1 - ssm/tss)
+        plt.plot(losses, epocs)
+        plt.xlabel("Loss")
+        plt.ylabel("Accuracy")
+        plt.show()
+    
+    
 
-# Define loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001)
+    
+def calculate_metrics(model , test_data_loader):
+    
+    model.eval()
+    with torch.no_grad():
+        y_true = []
+        y_pred = []
+        for i in test_data_loader:
+            X = torch.tensor(i[0]).float()
+            Y = torch.tensor(i[1]).squeeze(0).view(-1 ,20).float()
+            output = model(X)
+            y_true.extend(Y.numpy())
+            y_pred.extend(output.numpy())
 
-# Training loop
-for epoch in range(num_epochs):
-    # Forward pass
-    outputs = model(inputs)
-    loss = criterion(outputs, labels)
+        y_true = np.array(y_true)
+        y_pred = np.array(y_pred)
 
-    # Backward and optimize
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+        print("R^2: ", r2_score(y_true, y_pred))
+        print("MSE: ", mean_squared_error(y_true, y_pred))
+        print("MAE: ", mean_absolute_error(y_true, y_pred))
+        print("MAPE: ", mean_absolute_percentage_error(y_true, y_pred))
 
-    # Print progress
-    if (epoch+1) % 100 == 0:
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+if(__name__ == "__main__"):
+    train_data_loader , test_data_loader = get_data_loader()
+    model = Model(config["embedding_size"] , config["hidden_size"] ,2* config["output_size"])
+    criterion = nn.L1Loss()
+    optimizer = optim.Adam(model.parameters() )
+    train(model , train_data_loader , criterion , optimizer)
+    test(test_data_loader , model , criterion , optimizer)
+    calculate_metrics(model , test_data_loader)

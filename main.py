@@ -122,6 +122,7 @@ def parse_layers_from_arch(layers ):
     with open('config.json', 'r') as f:
         config = json.load(f)
 
+
     embedding_size = config["embedding_size"]
     layer2vec = [0] * embedding_size
     index = 0
@@ -281,7 +282,7 @@ if __name__ == '__main__':
 
         print("=="*5 )
         print(key) 
-       # main(parser,current_time, value)
+        main(parser,current_time, value)
         print(key)
         print("\n\n"*5)
         os.chdir('../../')

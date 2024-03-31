@@ -2,3 +2,5 @@ Results
 log
 *.o
 __pycache__
+DDN2Vec
+DDN2Vec.ipynb
