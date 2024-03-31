@@ -9,5 +9,7 @@
     "embedding_size": 60,
     "not_same": 0,
     "same": 1 ,
-    "end": -1
+    "end": -1,
+    "output_size": 9,
+    "hidden_size" : 120
 }
